@@ -14,9 +14,9 @@ interface Dashboard {
 export default function DashboardList() {
     const [searchQuery, setSearchQuery] = useState('');
 
-    const { data: dashboards = [], isLoading } = useQuery({
+    const { data: dashboards = [], isLoading } = useQuery<Dashboard[]>({
         queryKey: ['dashboards'],
-        queryFn: () => apiFetch('/v1/dashboards/', {}, []),
+        queryFn: () => apiFetch('/v1/dashboards/', {}, undefined),
     });
 
     // Filter dashboards based on search
@@ -40,7 +40,7 @@ export default function DashboardList() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-full bg-gray-50">
             {/* Header */}
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

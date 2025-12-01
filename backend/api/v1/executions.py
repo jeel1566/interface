@@ -50,6 +50,7 @@ async def list_executions(
     status: Optional[str] = Query(None, description="Filter by status"),
     start_date: Optional[datetime] = Query(None, description="Filter by start date (ISO format)"),
     end_date: Optional[datetime] = Query(None, description="Filter by end date (ISO format)"),
+    search: Optional[str] = Query(None, description="Search text in input/output data"),
     limit: int = Query(50, le=100, description="Max results to return"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     supabase=Depends(get_supabase)
@@ -70,6 +71,13 @@ async def list_executions(
             query = query.gte('created_at', start_date.isoformat())
         if end_date:
             query = query.lte('created_at', end_date.isoformat())
+        
+        if search:
+            # Search in input_data and output_data JSONB columns
+            # Note: This is a simple text search on the JSON representation
+            # For more advanced search, we might need specific keys or full-text search
+            or_filter = f"input_data.ilike.%{search}%,output_data.ilike.%{search}%"
+            query = query.or_(or_filter)
         
         query = query.order('created_at', desc=True).range(offset, offset + limit - 1)
         

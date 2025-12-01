@@ -1,14 +1,11 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
-import Instances from './pages/Instances';
-import Workflows from './pages/Workflows';
-import WorkflowExecute from './pages/WorkflowExecute';
-import Executions from './pages/Executions';
-import ExecutionDetail from './pages/ExecutionDetail';
 import DashboardBuilder from './pages/DashboardBuilder';
 import DashboardView from './pages/DashboardView';
 import DashboardList from './pages/DashboardList';
+import Instances from './pages/Instances';
+import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
@@ -19,12 +16,10 @@ function App() {
           <Routes>
             <Route path="/" element={<DashboardList />} />
             <Route path="/instances" element={<Instances />} />
-            <Route path="/workflows" element={<Workflows />} />
-            <Route path="/workflows/:workflowId/execute" element={<WorkflowExecute />} />
-            <Route path="/executions" element={<Executions />} />
-            <Route path="/executions/:runId" element={<ExecutionDetail />} />
             <Route path="/builder" element={<DashboardBuilder />} />
             <Route path="/dashboards/:dashboardId" element={<DashboardView />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
       </BrowserRouter>

@@ -16,9 +16,9 @@ interface SidebarProps {
 export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
     const location = useLocation();
 
-    const { data: dashboards = [], isLoading } = useQuery({
+    const { data: dashboards = [], isLoading } = useQuery<Dashboard[]>({
         queryKey: ['dashboards'],
-        queryFn: () => apiFetch('/v1/dashboards/', {}, []),
+        queryFn: () => apiFetch('/v1/dashboards/', {}, undefined),
     });
 
     const isActive = (path: string) => location.pathname === path;
@@ -96,6 +96,12 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                 >
                     <span className="mr-2">+</span>
                     New Dashboard
+                </Link>
+                <Link
+                    to="/instances"
+                    className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                    🔌 Instances
                 </Link>
                 <Link
                     to="/settings"

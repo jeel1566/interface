@@ -21,12 +21,13 @@ export default function ExecutionHistory({ workflowId, dashboardId }: ExecutionH
     const [statusFilter, setStatusFilter] = useState<string>('');
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
+    const [search, setSearch] = useState<string>('');
     const [selectedExecution, setSelectedExecution] = useState<Execution | null>(null);
 
     const pageSize = 20;
 
     const { data: executions = [], isLoading, isError } = useQuery<Execution[]>({
-        queryKey: ['executions', workflowId, page, statusFilter, startDate, endDate],
+        queryKey: ['executions', workflowId, page, statusFilter, startDate, endDate, search],
         queryFn: () => {
             const params = new URLSearchParams({
                 workflow_id: workflowId,
@@ -37,8 +38,9 @@ export default function ExecutionHistory({ workflowId, dashboardId }: ExecutionH
             if (statusFilter) params.append('status', statusFilter);
             if (startDate) params.append('start_date', new Date(startDate).toISOString());
             if (endDate) params.append('end_date', new Date(endDate).toISOString());
+            if (search) params.append('search', search);
 
-            return apiFetch(`/v1/executions?${params.toString()}`, {}, []);
+            return apiFetch(`/v1/executions?${params.toString()}`, {}, undefined);
         },
         enabled: !!workflowId,
     });
@@ -87,9 +89,19 @@ export default function ExecutionHistory({ workflowId, dashboardId }: ExecutionH
                         className="block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                     />
                 </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Search Data</label>
+                    <input
+                        type="text"
+                        placeholder="Search input/output..."
+                        value={search}
+                        onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+                        className="block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                    />
+                </div>
                 <div className="flex-1 text-right">
                     <button
-                        onClick={() => { setStatusFilter(''); setStartDate(''); setEndDate(''); setPage(0); }}
+                        onClick={() => { setStatusFilter(''); setStartDate(''); setEndDate(''); setSearch(''); setPage(0); }}
                         className="text-sm text-blue-600 hover:text-blue-800"
                     >
                         Clear Filters
@@ -211,6 +223,7 @@ export default function ExecutionHistory({ workflowId, dashboardId }: ExecutionH
                     execution={selectedExecution}
                     onClose={() => setSelectedExecution(null)}
                     dashboardId={dashboardId}
+                    workflowId={workflowId}
                 />
             )}
         </div>

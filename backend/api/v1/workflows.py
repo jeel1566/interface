@@ -141,61 +141,21 @@ async def execute_workflow(
     3. Triggers the n8n workflow
     4. Returns a run_id for tracking
     """
-    import uuid
-    from datetime import datetime
-    from api.n8n_service import N8nClient
-    
     try:
-        # Get instance details
-        instance_response = await asyncio.to_thread(
-            lambda: supabase.table('instances').select('*').eq('id', request_data.instance_id).eq('is_active', True).execute()
+        # Use the shared WorkflowExecutor service
+        from api.workflow_service import WorkflowExecutor
+        
+        # Initialize executor (config is not strictly used by the class currently, so None is fine)
+        executor = WorkflowExecutor(supabase, None)
+        
+        # Queue the execution
+        # Note: We use a placeholder user_id for MVP
+        run_id = await executor.queue_execution(
+            workflow_id=workflow_id,
+            user_id="mvp-user",
+            input_data=request_data.input_data,
+            instance_id=request_data.instance_id
         )
-        
-        if not instance_response.data:
-            raise HTTPException(status_code=404, detail="Instance not found")
-        
-        instance = instance_response.data[0]
-        
-        # Connect to n8n instance
-        client = N8nClient(instance['url'], instance['api_key_encrypted'])
-        
-        # Get workflow details
-        workflow = await client.get_workflow_by_id(workflow_id)
-        
-        if not workflow:
-            raise HTTPException(status_code=404, detail="Workflow not found")
-        
-        # Generate unique run_id
-        run_id = str(uuid.uuid4())
-        
-        # Get schemas for storing in execution log
-        from api.n8n_service import parse_input_schema, parse_output_schema
-        input_schema = parse_input_schema(workflow)
-        output_schema = parse_output_schema(workflow)
-        
-        # Create execution log record
-        execution_log = {
-            'run_id': run_id,
-            'workflow_id': workflow_id,
-            'workflow_name': workflow.get('name', ''),
-            'instance_id': request_data.instance_id,
-            'status': 'pending',
-            'input_data': request_data.input_data,
-            'input_schema': input_schema,
-            'output_schema': output_schema,
-            'created_at': datetime.utcnow().isoformat()
-        }
-        
-        await asyncio.to_thread(
-            lambda: supabase.table('execution_logs').insert(execution_log).execute()
-        )
-        
-        # TODO: For MVP, we'll execute synchronously
-        # In production, this should be queued to Celery
-        
-        # For now, trigger the workflow directly
-        # n8n workflows are typically triggered via webhook or manual execution
-        # This is a simplified version for MVP
         
         return WorkflowExecuteResponse(
             run_id=run_id,
@@ -203,8 +163,8 @@ async def execute_workflow(
             message=f'Workflow execution queued with run_id: {run_id}'
         )
         
-    except HTTPException:
-        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to execute workflow: {str(e)}")
 

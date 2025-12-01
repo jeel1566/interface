@@ -17,34 +17,54 @@ interface Execution {
 interface ExecutionDetailModalProps {
     execution: Execution;
     onClose: () => void;
-    dashboardId?: string; // Needed for re-run
+    dashboardId?: string;
+    workflowId?: string;
 }
 
-export default function ExecutionDetailModal({ execution, onClose, dashboardId }: ExecutionDetailModalProps) {
+import { useToast } from '@/contexts/ToastContext';
+
+export default function ExecutionDetailModal({ execution, onClose, dashboardId, workflowId }: ExecutionDetailModalProps) {
     const [activeTab, setActiveTab] = useState<'output' | 'input' | 'json'>('output');
+    const [copyFeedback, setCopyFeedback] = useState<string>('');
+    const { showToast } = useToast();
 
     const reRunMutation = useMutation({
-        mutationFn: () =>
-            apiFetch(`/v1/dashboards/${dashboardId}/execute`, {
-                method: 'POST',
-                body: JSON.stringify({
-                    inputs: execution.input_data,
-                }),
-            }, null),
+        mutationFn: () => {
+            if (dashboardId) {
+                return apiFetch(`/v1/dashboards/${dashboardId}/execute`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        inputs: execution.input_data,
+                    }),
+                }, undefined);
+            } else if (workflowId) {
+                // Fallback to workflow execution if no dashboard context
+                throw new Error("Cannot re-run without Dashboard context yet.");
+            }
+            throw new Error("No context to re-run execution");
+        },
         onSuccess: () => {
-            alert('Workflow re-run started!');
+            showToast('Workflow re-run started!', 'success');
             onClose();
         },
         onError: (error: any) => {
-            alert(`Failed to re-run: ${error.message}`);
+            showToast(`Failed to re-run: ${error.message}`, 'error');
         }
     });
 
     const handleReRun = () => {
-        if (!dashboardId) return;
+        if (!dashboardId && !workflowId) return;
         if (confirm('Are you sure you want to re-run this workflow with the same inputs?')) {
             reRunMutation.mutate();
         }
+    };
+
+    const handleCopyJson = () => {
+        const json = JSON.stringify(execution, null, 2);
+        navigator.clipboard.writeText(json).then(() => {
+            setCopyFeedback('Copied!');
+            setTimeout(() => setCopyFeedback(''), 2000);
+        });
     };
 
     return (
@@ -79,8 +99,8 @@ export default function ExecutionDetailModal({ execution, onClose, dashboardId }
                                     <div>
                                         <span className="block text-gray-500">Status</span>
                                         <span className={`inline-flex px-2 text-xs font-semibold rounded-full ${execution.status === 'success' ? 'bg-green-100 text-green-800' :
-                                                execution.status === 'failed' ? 'bg-red-100 text-red-800' :
-                                                    'bg-blue-100 text-blue-800'
+                                            execution.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                                'bg-blue-100 text-blue-800'
                                             }`}>
                                             {execution.status}
                                         </span>
@@ -168,6 +188,13 @@ export default function ExecutionDetailModal({ execution, onClose, dashboardId }
                                 {reRunMutation.isPending ? 'Starting...' : 'Re-run Workflow'}
                             </button>
                         )}
+                        <button
+                            type="button"
+                            onClick={handleCopyJson}
+                            className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                        >
+                            {copyFeedback || 'Copy JSON'}
+                        </button>
                         <button
                             type="button"
                             onClick={onClose}

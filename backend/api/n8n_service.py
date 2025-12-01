@@ -65,10 +65,12 @@ class N8nClient:
             
         # Ensure the URL ends with a slash for proper joining
         # Sanitize URL: If user pasted a page URL (e.g. .../workflow/ID or .../home/workflows), strip it back to base
-        if "/workflow/" in instance_url or "/home/" in instance_url:
-            parsed = urlparse(instance_url)
-            instance_url = f"{parsed.scheme}://{parsed.netloc}/"
-            self.logger.warning(f"Sanitized instance URL from {urlparse(instance_url).path} to base domain: {instance_url}")
+        if "/workflow/" in instance_url:
+            instance_url = instance_url.split("/workflow/")[0]
+            self.logger.warning(f"Sanitized instance URL to: {instance_url}")
+        elif "/home/" in instance_url:
+            instance_url = instance_url.split("/home/")[0]
+            self.logger.warning(f"Sanitized instance URL to: {instance_url}")
         
         self.instance_url = instance_url if instance_url.endswith('/') else instance_url + '/'
         self.api_key = api_key

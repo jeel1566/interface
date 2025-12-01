@@ -79,13 +79,16 @@ async def create_instance(instance: InstanceCreate, supabase=Depends(get_supabas
         from api.n8n_service import N8nClient
         
         client = N8nClient(str(instance.url), instance.api_key)
-        is_valid = await client.validate_connection()
-        
-        if not is_valid:
-            raise HTTPException(
-                status_code=400, 
-                detail="Failed to connect to n8n instance. Check URL and API key."
-            )
+        try:
+            is_valid = await client.validate_connection()
+            if not is_valid:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Failed to connect to n8n instance. Please check your URL and API Key."
+                )
+        except Exception as e:
+            # Pass through the specific error message from the client (e.g. Unauthorized)
+            raise HTTPException(status_code=400, detail=str(e))
         
         # Insert into database
         data = {

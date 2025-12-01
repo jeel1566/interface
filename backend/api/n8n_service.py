@@ -64,11 +64,17 @@ class N8nClient:
             raise ValueError("API key cannot be empty")
             
         # Ensure the URL ends with a slash for proper joining
+        # Sanitize URL: If user pasted a page URL (e.g. .../workflow/ID or .../home/workflows), strip it back to base
+        if "/workflow/" in instance_url or "/home/" in instance_url:
+            parsed = urlparse(instance_url)
+            instance_url = f"{parsed.scheme}://{parsed.netloc}/"
+            self.logger.warning(f"Sanitized instance URL from {urlparse(instance_url).path} to base domain: {instance_url}")
+        
         self.instance_url = instance_url if instance_url.endswith('/') else instance_url + '/'
         self.api_key = api_key
         self.client = httpx.AsyncClient(
             headers={
-                "Authorization": f"Bearer {api_key}",
+                "X-N8N-API-KEY": api_key,
                 "Content-Type": "application/json"
             },
             timeout=30.0
@@ -134,7 +140,13 @@ class N8nClient:
             List of workflow dictionaries with id, name, and active status
         """
         response = await self._make_request("GET", "api/v1/workflows")
-        workflows_data = response.json()
+        
+        try:
+            workflows_data = response.json()
+            self.logger.info(f"Raw n8n workflows response: {workflows_data}")
+        except Exception as e:
+            self.logger.error(f"Failed to parse n8n response as JSON. Status: {response.status_code}, Content: {response.text[:200]}...")
+            raise N8nConnectionError(f"Invalid response from n8n instance: {response.text[:100]}") from e
         
         # Return format: [{"id": "xxx", "name": "yyy", "active": true}, ...]
         workflows = []

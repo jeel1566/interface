@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  fastapi:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - redis
+      # Note: In a real local setup, you might run Postgres in a container.
+      # Here, we assume you are connecting to Supabase's hosted Postgres,
+      # so we don't include a Postgres service. The dependency is conceptual.
+    networks:
+      - n8n_interface_net
+
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - n8n_interface_net
+
+  # You would add a Celery worker service here as well
+  # celery_worker:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   command: celery -A workers.celery_app worker --loglevel=info
+  #   volumes:
+  #     - ./backend:/app
+  #   env_file:
+  #     - ./backend/.env
+  #   depends_on:
+  #     - redis
+  #   networks:
+  #     - n8n_interface_net
+
+networks:
+  n8n_interface_net:
+    driver: bridge
+
+volumes:
+  redis_data:

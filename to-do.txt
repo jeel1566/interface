@@ -1,0 +1,19 @@
+Celery Workers: The 
+execute_workflow_task
+ function exists but is called via asyncio.create_task (fire-and-forget in the same process) instead of a proper Celery worker. This is risky for long-running tasks.
+Webhook Callback: The 
+handle_workflow_callback
+ function exists but the API endpoint to receive the callback (POST /api/v1/webhook/callback/{run_id}) is MISSING from the router.
+Redis Integration: Redis is configured in 
+.env
+ but not actually used for a task queue yet.
+
+ frontend :-
+ Real-time Updates: The 
+ExecutionDetail
+ page uses polling (refresh every 3s). WebSockets would be better but polling is acceptable for MVP.
+App Builder UI: There are 
+AppBuilder.tsx
+ and 
+AppView.tsx
+ files, but they seem experimental and not fully integrated with the main navigation.
